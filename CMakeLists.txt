@@ -7,7 +7,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-cmake_minimum_required( VERSION 3.12 FATAL_ERROR )
+#Changed : 3.18 instead of 3.12, from ectrans CMake configuration
+cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
 find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( fiat LANGUAGES Fortran C CXX )
@@ -19,6 +20,20 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+#Added : from ectrans CMake configuration
+if( ${CMAKE_VERSION} VERSION_LESS "3.25" )
+  if ( ECTRANS_ENABLE_ACC OR (NOT DEFINED ECTRANS_ENABLE_ACC AND ENABLE_ACC) )
+    # See https://gitlab.kitware.com/cmake/cmake/-/issues/23691, fixed in CMake 3.25
+    # (TL;DR: FindOpenACC sets OpenACC_<LANG>_FOUND correctly but does not set
+    #  OpenACC_FOUND unless all three C, CXX, and Fortran have been found - even if
+    #  only one language has been requested via COMPONENTS)
+    find_package( OpenACC COMPONENTS Fortran )
+    if( OpenACC_Fortran_FOUND )
+      set( OpenACC_FOUND ON )
+    endif()
+  endif()
+endif()
 
 ### Options
 
@@ -79,6 +94,13 @@ ecbuild_add_option( FEATURE WARNINGS
                     DEFAULT ON
                     DESCRIPTION "Add warnings to compiler" )
 
+#added : from ectrans CMake configuration
+ecbuild_add_option( FEATURE ACC
+                    DEFAULT OFF
+                    DESCRIPTION "Support for using GPUs with OpenACC"
+                    REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
+
+
 if(CMAKE_C_COMPILER_ID STREQUAL "PGI" OR CMAKE_C_COMPILER_ID STREQUAL "NVHPC" )
     set (DEFAULT_DR_HOOK_NVTX ON)
 else()
@@ -97,6 +119,57 @@ ecbuild_add_option( FEATURE DR_HOOK_ROCTX
 
 ecbuild_find_package( NAME Realtime QUIET )
 
+#Added : from ectrans CMake configuration
+# Search for available GPU runtimes, searching for CUDA first and, if not found,
+# attempt to find HIP
+if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
+  set(HAVE_CUDA 0)
+  set(HAVE_HIP 0)
+  ectrans_find_cuda() # sets "HAVE_CUDA"
+  if( NOT HAVE_CUDA )
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+        ectrans_find_hip() # sets "HAVE_HIP"
+    else()
+        message("Cannot enable for HIP language, require CMake >= 3.24")
+    endif()
+  endif()
+endif()
+
+#Added : from ectrans CMake configuration
+ecbuild_add_option( FEATURE GPU
+                    DEFAULT OFF
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
+
+#Added : from ectrans CMake configuration
+if( HAVE_GPU )
+  if( HAVE_ACC )
+    set( GPU_OFFLOAD "ACC" )
+  elseif( HAVE_OMP )
+    set( GPU_OFFLOAD "OMP" )
+  else()
+    ecbuild_error("Could not enable GPU as OMP or ACC were not enabled")
+  endif()
+endif()
+
+## find fypp
+ecbuild_find_package( fckit )
+find_program( FYPP fypp )
+
+if( fckit_FOUND AND fckit_HAVE_FCKIT_VENV )
+  set( FYPP ${FCKIT_VENV_EXE} -m fypp )
+elseif( fckit_FOUND )
+  # This is only needed for building in environments with python3 older than 3.8
+  list( APPEND _fckit_fypp_path "${FYPP}" )
+  list( LENGTH _fckit_fypp_path _list_length )
+  MATH( EXPR _last_entry "${_list_length} - 1" )
+  list( GET _fckit_fypp_path ${_last_entry} FYPP )
+elseif( FYPP MATCHES FYPP-NOTFOUND )
+  set(FYPP ${fypp_SOURCE_DIR}/bin/fypp)
+  ecbuild_info("fypp downloaded to: ${FYPP}")
+endif()
+
+
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(_whole_archive "-Wl,-force_load")
   set(_no_whole_archive "")
@@ -109,6 +182,7 @@ else()
     set(_no_whole_archive "-Wl,--no-whole-archive")
   endif()
 endif()
+
 ### Sources
 # define MPI_SERIAL_LIBRARIES before including src folder, for use in fiat library declaration
 set(MPI_SERIAL_LIBRARIES ${_whole_archive} mpi_serial ${_no_whole_archive})

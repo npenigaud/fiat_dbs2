@@ -45,4 +45,7 @@ endif()
 
 include( fiat_target_fortran_module_directory )
 include( fiat_target_ignore_missing_symbols )
+include( ectrans_find_cuda )
+include( ectrans_find_hip )
+include( CheckLanguage )
 

@@ -44,6 +44,13 @@ if( NOT fiat_VERSION_PATCH )
 endif()
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/library/version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c @ONLY )
 
+add_custom_command (OUTPUT fiat_doublestack_mod.F90
+  COMMAND ${FYPP} -m os ${CMAKE_CURRENT_SOURCE_DIR}/doublestack/fiat_doublestack_mod.fypp > fiat_doublestack_mod.F90
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/doublestack/fiat_doublestack_mod.fypp VERBATIM)
+
+list (APPEND fiat_src ${CMAKE_CURRENT_SOURCE_DIR}/doublestack/internal/alloc_aligned.c)
+list (APPEND fiat_src fiat_doublestack_mod.F90)
+
 ecbuild_list_add_pattern( LIST fiat_src GLOB
     drhook/*.c drhook/*.F*
     ecsort/*.c ecsort/*.F*
@@ -56,12 +63,12 @@ ecbuild_list_add_pattern( LIST fiat_src GLOB
 
 if( HAVE_MPL_F77_DEPRECATED)
     ecbuild_list_add_pattern( LIST fiat_src GLOB
-      "mpl/internal_deprecated/*.c" "mpl/internal_deprecated/*.F*"
+      "mpl/internal_deprecated/*.c" "mpl/mpl_doublestack_mod.F90" "mpl/internal_deprecated/*.F*"
       "mpl/mpl_module.F90" "mpl/mpl_bindc.F90" )
     ecbuild_info( "FIAT building with *deprecated* F77 (mpif.h) MPL interface" )
 else()
     ecbuild_list_add_pattern( LIST fiat_src GLOB
-      "mpl/internal_f08/*.c" "mpl/internal_f08/*.F*"
+      "mpl/internal_f08/*.c" "mpl/mpl_doublestack_mod.F90" "mpl/internal_f08/*.F*"
       "mpl/mpl_module.F90" "mpl/mpl_bindc.F90" )
     if( HAVE_MPI )
         ecbuild_info( "Not compiling mpi_f08_dummy_mod, because MPI is found" )
@@ -117,6 +124,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
         ${CMAKE_CURRENT_SOURCE_DIR}/ecsort/internal
         ${CMAKE_CURRENT_SOURCE_DIR}/util/internal
         ${CMAKE_CURRENT_SOURCE_DIR}/system/internal
+        ${CMAKE_CURRENT_SOURCE_DIR}/doublestack/internal       
     PUBLIC_INCLUDES
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
@@ -124,6 +132,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:include/fiat>
         ${MPI_Fortran_INCLUDE_DIRS}
+   PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
     OUTPUT_NAME fiat
     DEPENDS ${FIAT_DEPENDENCE_${LIB_TYPE}}
     )
@@ -192,6 +201,16 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     if( HAVE_OMP )
         target_link_libraries( ${fiatlib} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
+
+    if( HAVE_ACC )
+        target_link_libraries( fiat PRIVATE OpenACC::OpenACC_Fortran )
+    endif()
+    
+    if( HAVE_OMP )
+        target_link_libraries( fiat PRIVATE OpenMP::OpenMP_Fortran )
+    endif()
+
+
 
     fiat_target_ignore_missing_symbols( TARGET ${fiatlib} SYMBOLS
       _MallocExtension_GetNumericProperty

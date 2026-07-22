@@ -244,7 +244,7 @@ INTEGER(KIND=C_INT8_T)  :: SIDE
 ILBOUNDS = 1
 SIDE = 0
  if (${verbose}$) write (0,*) "fiat_allocate specific routine, ubounds",ubounds
-if (present (lbounds)) write (0,*) "lbounds present, value",lbounds
+if (${verbose}$ .and. present (lbounds)) write (0,*) "lbounds present, value",lbounds
 IF (PRESENT (LBOUNDS)) ILBOUNDS = LBOUNDS
 IF (PRESENT (SIDE_PARAM)) SIDE=SIDE_PARAM
 !SIDE=SIDE_PARAM

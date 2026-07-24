@@ -109,6 +109,8 @@ else()
     set( LIB_TYPES STATIC )
 endif()
 
+message(STATUS "CMAKE_CURRENT_BINARY_DIR : ${CMAKE_CURRENT_BINARY_DIR}")
+
 foreach( LIB_TYPE ${LIB_TYPES} )
     set( fiatlib ${fiatlib_${LIB_TYPE}} )
     ecbuild_add_library( TARGET ${fiatlib}
@@ -136,7 +138,8 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     OUTPUT_NAME fiat
     DEPENDS ${FIAT_DEPENDENCE_${LIB_TYPE}}
     )
-
+ set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=gfx90a" )
+  
     if (HAVE_DR_HOOK_NVTX)
         # Files from within DrHook
         ecbuild_list_add_pattern( LIST fiat_nvtx_src GLOB *.c SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/drhook/extensions/nvtx)
@@ -199,7 +202,8 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     endif()
 
     if( HAVE_OMP )
-        target_link_libraries( ${fiatlib} PRIVATE OpenMP::OpenMP_Fortran )
+        target_link_libraries( ${fiatlib} PRIVATE OpenMP::OpenMP_Fortran omptarget )
+        target_link_options(${fiatlib} PRIVATE -fopenmp --offload-arch=gfx90a)
     endif()
 
     if( HAVE_ACC )

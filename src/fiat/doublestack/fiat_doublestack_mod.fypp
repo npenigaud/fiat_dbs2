@@ -7,6 +7,9 @@ USE ISO_C_BINDING, ONLY : C_PTR, C_SIZE_T, C_LOC, C_F_POINTER, C_ASSOCIATED, C_N
 #ifdef ACCGPU
 USE OPENACC
 #endif
+#ifdef OMPGPU
+USE OMP_LIB
+#endif
 
 IMPLICIT NONE
 
@@ -94,14 +97,23 @@ FUNCTION SIZE_ALIGNED(SIZE_BYTES, ALIGNMENT)
 END FUNCTION SIZE_ALIGNED
 
 SUBROUTINE FIAT_DOUBLESTACK_NEW(DOUBLESTACK,SIZE_BYTES,LLGPU)
+#ifdef OMPGPU
+  USE OMP_LIB, ONLY : OMP_GET_DEFAULT_DEVICE,omp_target_alloc, omp_target_associate_ptr
+#endif
   TYPE(FIAT_DOUBLESTACK), INTENT(OUT) :: DOUBLESTACK
   INTEGER(C_SIZE_T), INTENT(IN) :: SIZE_BYTES
   LOGICAL, INTENT(IN) :: LLGPU
   INTEGER(C_SIZE_T) :: SIZE_BYTES_ALIGNED
+  TYPE(C_PTR) :: DOUBLESTACK_AS_CPTR
+#ifdef OMPGPU
+  INTEGER :: DEVICE_NUM
+  LOGICAL :: IS_ON_GPU
+#endif
   if (${verbose}$) write (0,*) "fiat_doublestack_new: allocating ",size_bytes,"bytes"
   SIZE_BYTES_ALIGNED=SIZE_ALIGNED(SIZE_BYTES,DOUBLESTACK%ALIGNMENT)
   if (${verbose}$) write (0,*) "fiat_doublestack_new: after size_aligned, allocating ",size_bytes,"bytes"
-  CALL C_F_POINTER(ALLOC_ALIGNED(DOUBLESTACK%ALIGNMENT,SIZE_BYTES_ALIGNED),DOUBLESTACK%PTR,[SIZE_BYTES_ALIGNED])
+  DOUBLESTACK_AS_CPTR=ALLOC_ALIGNED(DOUBLESTACK%ALIGNMENT,SIZE_BYTES_ALIGNED)
+  CALL C_F_POINTER(DOUBLESTACK_AS_CPTR,DOUBLESTACK%PTR,[SIZE_BYTES_ALIGNED])
   IF (LLGPU) THEN
     if (${verbose}$) write (0,*) "entering on gpu"
 #ifdef ACCGPU    
@@ -110,8 +122,11 @@ SUBROUTINE FIAT_DOUBLESTACK_NEW(DOUBLESTACK,SIZE_BYTES,LLGPU)
     if (${verbose}$) write (0,*) "ACCGPU branch, acc_is_present(doublestack%ptr)",acc_is_present(doublestack%ptr)
 #endif
 #ifdef OMPGPU
-      !$OMP TARGET ENTER DATA MAP(ALLOC:DOUBLESTACK%PTR)
-    if (${verbose}$) write (0,*) "OMPGPU branch, passed acc enter data create"
+    if (${verbose}$) write (0,*) "nombre de cartes ",omp_get_num_devices()
+    DEVICE_NUM=OMP_GET_DEFAULT_DEVICE()
+    !$OMP TARGET ENTER DATA MAP(ALLOC:DOUBLESTACK%PTR) DEVICE(DEVICE_NUM)
+    if (${verbose}$) write (0,*) "OMPGPU branch, passed omp enter data create, device_num",device_num
+    if (${verbose}$) write (0,*) "OMPGPU branch, omp_target_is_present(doublestack%ptr)",omp_target_is_present(doublestack_as_cptr,device_num)
 #endif
   ENDIF
   DOUBLESTACK%INDEX_UP=SIZE_BYTES

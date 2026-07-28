@@ -138,7 +138,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     OUTPUT_NAME fiat
     DEPENDS ${FIAT_DEPENDENCE_${LIB_TYPE}}
     )
- set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=${CMAKE_HIP_ARCHITECTURES}" )
+ set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=${HIP_ARCH_LIST}" )
   
     if (HAVE_DR_HOOK_NVTX)
         # Files from within DrHook
@@ -203,7 +203,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
 
     if( HAVE_OMP )
         target_link_libraries( ${fiatlib} PRIVATE OpenMP::OpenMP_Fortran omptarget )
-        target_link_options(${fiatlib} PRIVATE -fopenmp --offload-arch=${CMAKE_HIP_ARCHITECTURES})
+        target_link_options(${fiatlib} PRIVATE -fopenmp --offload-arch=${HIP_ARCH_LIST})
     endif()
 
     if( HAVE_ACC )

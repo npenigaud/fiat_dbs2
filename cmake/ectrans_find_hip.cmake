@@ -57,6 +57,8 @@ macro( ectrans_find_hip )
       enable_language(HIP)
       ecbuild_info("HIP compiler found: ${CMAKE_HIP_COMPILER}")
       ecbuild_info("HIP target architecture: ${CMAKE_HIP_ARCHITECTURES}")
+      string(REPLACE " " "," HIP_ARCH_LIST "${CMAKE_HIP_ARCHITECTURES}")
+      list(REMOVE_DUPLICATES HIP_ARCH_LIST)
     endif()
 
     # Find HIP libraries

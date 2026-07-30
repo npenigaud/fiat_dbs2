@@ -138,7 +138,9 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     OUTPUT_NAME fiat
     DEPENDS ${FIAT_DEPENDENCE_${LIB_TYPE}}
     )
- set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=${HIP_ARCH_LIST}" )
+    if( HAVE_OMP )
+      set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=${HIP_ARCH_LIST}" )
+    endif()
   
     if (HAVE_DR_HOOK_NVTX)
         # Files from within DrHook

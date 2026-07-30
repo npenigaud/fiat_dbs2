@@ -99,6 +99,10 @@ ecbuild_add_option( FEATURE ACC
                     DEFAULT OFF
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
+ecbuild_add_option( FEATURE OMPGPU
+                    DEFAULT OFF
+                    DESCRIPTION "Support for using GPUs with OpenMP"
+                    REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
 
 if(CMAKE_C_COMPILER_ID STREQUAL "PGI" OR CMAKE_C_COMPILER_ID STREQUAL "NVHPC" )
@@ -145,7 +149,7 @@ ecbuild_add_option( FEATURE GPU
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
-  elseif( HAVE_OMP )
+  elseif( HAVE_OMPGPU )
     set( GPU_OFFLOAD "OMP" )
   else()
     ecbuild_error("Could not enable GPU as OMP or ACC were not enabled")

@@ -138,7 +138,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
     OUTPUT_NAME fiat
     DEPENDS ${FIAT_DEPENDENCE_${LIB_TYPE}}
     )
-    if( HAVE_OMP )
+    if( HAVE_OMPGPU )
       set_source_files_properties( ${CMAKE_CURRENT_BINARY_DIR}/fiat_doublestack_mod.F90 PROPERTIES COMPILE_OPTIONS "--offload-arch=${HIP_ARCH_LIST}" )
     endif()
   
@@ -203,7 +203,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
         target_link_libraries( ${fiatlib} PRIVATE fckit )
     endif()
 
-    if( HAVE_OMP )
+    if( HAVE_OMPGPU )
         target_link_libraries( ${fiatlib} PRIVATE OpenMP::OpenMP_Fortran omptarget )
         target_link_options(${fiatlib} PRIVATE -fopenmp --offload-arch=${HIP_ARCH_LIST})
     endif()
@@ -212,7 +212,7 @@ foreach( LIB_TYPE ${LIB_TYPES} )
         target_link_libraries( fiat PRIVATE OpenACC::OpenACC_Fortran )
     endif()
     
-    if( HAVE_OMP )
+    if( HAVE_OMPGPU )
         target_link_libraries( fiat PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 

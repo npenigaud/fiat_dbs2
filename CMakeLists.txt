@@ -99,7 +99,10 @@ ecbuild_add_option( FEATURE ACC
                     DEFAULT OFF
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
-
+ecbuild_add_option( FEATURE OMPGPU
+                    DEFAULT OFF
+                    DESCRIPTION "Support for using GPUs with OpenMP"
+                    REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
 if(CMAKE_C_COMPILER_ID STREQUAL "PGI" OR CMAKE_C_COMPILER_ID STREQUAL "NVHPC" )
     set (DEFAULT_DR_HOOK_NVTX ON)
@@ -139,13 +142,13 @@ endif()
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMPGPU) )
 
 #Added : from ectrans CMake configuration
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
-  elseif( HAVE_OMP )
+  elseif( HAVE_OMPGPU )
     set( GPU_OFFLOAD "OMP" )
   else()
     ecbuild_error("Could not enable GPU as OMP or ACC were not enabled")

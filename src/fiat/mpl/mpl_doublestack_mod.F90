@@ -39,11 +39,11 @@ SUBROUTINE DOUBLESTACK_INIT(LDGPU)
     ENDIF 
     WRITE (0, *) " MPL_DOUBLESTACK_SIZE = ", CL_MPL_DOUBLESTACK_SIZE
     CALL MPL_DOUBLESTACK%INIT (IL_MPL_DOUBLESTACK_SIZE,LLGPU)
-  else
-!    il_mpl_doublestack_size=256*1024_8**2
+  ELSE
+!    IL_MPL_DOUBLESTACK_SIZE=256*1024_8**2
 !   lower default size, to test memory measurement
-    il_mpl_doublestack_size=1*1024_8
-    call mpl_doublestack%init(il_mpl_doublestack_size,llgpu)
+    IL_MPL_DOUBLESTACK_SIZE=1*1024_8
+    CALL MPL_DOUBLESTACK%INIT(IL_MPL_DOUBLESTACK_SIZE,LLGPU)
   ENDIF
 
 END SUBROUTINE DOUBLESTACK_INIT

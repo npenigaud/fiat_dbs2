@@ -433,7 +433,7 @@ IF (.NOT. ASSOCIATED (SELF%PTR)) THEN
   RETURN
 ENDIF
 
-SIZE_BYTES= INT(KIND(P),C_SIZE_T) * SIZE(P)
+SIZE_BYTES= INT(KIND(P),C_SIZE_T) * SIZE(P,KIND=C_SIZE_T)
 
 PTR = C_LOC (P (${ ', '.join (map (lambda i: 'LBOUND (P, ' + str (i) + ')', range (1, rank+1))) }$))
 
